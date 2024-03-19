@@ -88,7 +88,7 @@ struct AnimationData {
                         accumulatedRootTransform;
                 } else {
                     auto temp = accumulatedRootTransform.Translation();
-                    temp.y = key.pos.y; // 높이 방향만 첫 프레임으로 보정
+                    temp.y = key.pos.y; // 높이 방향만 첫 프레임으로 보정, 평지라고 가정
                     accumulatedRootTransform.Translation(temp);
                 }
 
@@ -97,7 +97,10 @@ struct AnimationData {
             }
 
             // TODO: parentMatrix 사용
-            // boneTransforms[boneId] = ...;
+            // boneTransforms[boneId] = ...;    
+            // 뼈의 로컬 변환 행렬을 가져옵니다.
+
+            boneTransforms[boneId] = key.GetTransform() * parentMatrix;
         }
     }
 };

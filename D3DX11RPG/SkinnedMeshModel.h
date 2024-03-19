@@ -74,6 +74,7 @@ public:
 		}
 
 		m_boneTransforms.Upload(context);
+
 	}
 
 	void Render(ComPtr<ID3D11DeviceContext>& context) override {

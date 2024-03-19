@@ -1,7 +1,14 @@
 #include "Game.h"
 
+#include <DirectXCollision.h> // 구와 광선 충돌 계산에 사용
+#include <directxtk/DDSTextureLoader.h>
+#include <directxtk/SimpleMath.h>
+#include <tuple>
+#include <vector>
+
 #include "GeometryGenerator.h"
 #include "GraphicsCommon.h"
+#include "SkinnedMeshModel.h"
 
 
 using namespace std;
@@ -10,15 +17,12 @@ using namespace DirectX::SimpleMath;
 
 Game::Game() : AppBase() {}
 
-Game::~Game() {}
-
 bool Game::InitScene() {
 
-	AppBase::m_globalConstsCPU.strengthIBL = 0.1f;
-	AppBase::m_globalConstsCPU.lodBias = 0.0f;
+	AppBase::m_globalConstsCPU.strengthIBL = 1.0f;
 
-	AppBase::m_camera.Reset(Vector3(1.60851f, 0.409084f, 0.560064f), -1.65915f,
-		0.0654498f);
+	AppBase::m_camera.Reset(Vector3(3.74966f, 5.03645f, -2.54918f), -0.819048f,
+		0.741502f);
 
 	AppBase::InitCubemaps(
 		L"../Assets/Textures/Cubemaps/HDRI/", L"clear_pureskyEnvHDR.dds",
@@ -27,11 +31,25 @@ bool Game::InitScene() {
 
 	AppBase::InitScene();
 
+	// 조명 설정
+	{
+		// 조명 0은 고정
+		m_globalConstsCPU.lights[0].radiance = Vector3(5.0f);
+		m_globalConstsCPU.lights[0].position = Vector3(0.0f, 2.0f, 2.0f);
+		m_globalConstsCPU.lights[0].direction = Vector3(0.2f, -1.0f, 0.0f);
+		m_globalConstsCPU.lights[0].spotPower = 0.0f;
+		m_globalConstsCPU.lights[0].radius = 0.1f;
+		m_globalConstsCPU.lights[0].type = LIGHT_POINT | LIGHT_SHADOW;
+
+		m_globalConstsCPU.lights[1].type = LIGHT_OFF;
+		m_globalConstsCPU.lights[2].type = LIGHT_OFF;
+	}
+
 	// 바닥(거울)
 	{
 		// https://freepbr.com/materials/stringy-marble-pbr/
-		auto mesh = GeometryGenerator::MakeSquare(5.0, { 10.0f, 10.0f });
-		string path = "../Assets/Textures/PBR/stringy-marble-ue/";
+		auto mesh = GeometryGenerator::MakeSquare(5.0);
+		string path = "../Assets/Textures/PBR/worn-painted-metal-ue/";
 		mesh.albedoTextureFilename = path + "stringy_marble_albedo.png";
 		mesh.emissiveTextureFilename = "";
 		mesh.aoTextureFilename = path + "stringy_marble_ao.png";
@@ -39,74 +57,37 @@ bool Game::InitScene() {
 		mesh.normalTextureFilename = path + "stringy_marble_Normal-dx.png";
 		mesh.roughnessTextureFilename = path + "stringy_marble_Roughness.png";
 
-		auto ground = make_shared<Model>(m_device, m_context, vector{ mesh });
-		ground->m_materialConsts.GetCpu().albedoFactor = Vector3(0.2f);
-		ground->m_materialConsts.GetCpu().emissionFactor = Vector3(0.0f);
-		ground->m_materialConsts.GetCpu().metallicFactor = 0.5f;
-		ground->m_materialConsts.GetCpu().roughnessFactor = 0.3f;
-		Vector3 position = Vector3(0.0f, 0.0f, 0.0f);
-		ground->UpdateWorldRow(Matrix::CreateRotationX(3.141592f * 0.5f) *
+		m_ground = make_shared<Model>(m_device, m_context, vector{ mesh });
+		m_ground->m_materialConsts.GetCpu().albedoFactor = Vector3(0.7f);
+		m_ground->m_materialConsts.GetCpu().emissionFactor = Vector3(0.0f);
+		m_ground->m_materialConsts.GetCpu().metallicFactor = 0.5f;
+		m_ground->m_materialConsts.GetCpu().roughnessFactor = 0.3f;
+
+		Vector3 position = Vector3(0.0f, 0.0f, 2.0f);
+		m_ground->UpdateWorldRow(Matrix::CreateRotationX(3.141592f * 0.5f) *
 			Matrix::CreateTranslation(position));
+		m_ground->m_castShadow = false; // 바닥은 그림자 만들기 생략
 
 		m_mirrorPlane = SimpleMath::Plane(position, Vector3(0.0f, 1.0f, 0.0f));
-		// m_mirror = ground; // 바닥에 거울처럼 반사 구현
+		m_mirror = m_ground; // 바닥에 거울처럼 반사 구현
 
-		m_basicList.push_back(ground); // 거울은 리스트에 등록 X
+		// m_basicList.push_back(m_ground); // 거울은 리스트에 등록 X
 	}
 
-	// Main Object
-	//{
-	//	vector<string> clipNames = { "FightingIdleOnMichelle2.fbx",
-	//								"Fireball.fbx" };
-	//	string path = "../Assets/Characters/Mixamo/";
-
-	//	AnimationData aniData;
-
-	//	auto [meshes, _] =
-	//		GeometryGenerator::ReadAnimationFromFile(path, "character.fbx");
-
-	//	for (auto& name : clipNames) {
-	//		auto [_, ani] =
-	//			GeometryGenerator::ReadAnimationFromFile(path, name);
-
-	//		if (aniData.clips.empty()) {
-	//			aniData = ani;
-	//		}
-	//		else {
-	//			aniData.clips.push_back(ani.clips.front());
-	//		}
-	//	}
-
-	//	Vector3 center(0.0f, 0.1f, 1.0f);
-	//	m_character =
-	//		make_shared<SkinnedMeshModel>(m_device, m_context, meshes, aniData);
-	//	m_character->m_materialConsts.GetCpu().albedoFactor = Vector3(1.0f);
-	//	m_character->m_materialConsts.GetCpu().roughnessFactor = 0.8f;
-	//	m_character->m_materialConsts.GetCpu().metallicFactor = 0.0f;
-	//	m_character->UpdateWorldRow(Matrix::CreateScale(0.2f) *
-	//		Matrix::CreateTranslation(center));
-
-	//	m_basicList.push_back(m_character); // 리스트에 등록
-	//	m_pickedModel = m_character;
-	//}
-
+	character.CharacterInit(m_device, m_context);
+	m_characterMeshModel = character.GetCharacterMeshModel();
+	m_basicList.push_back(m_characterMeshModel); // 리스트에 등록
 	return true;
 }
 
-void Game::UpdateLights(float dt) { AppBase::UpdateLights(dt); }
+void Game::UpdateLights(float dt) {
+	AppBase::UpdateLights(dt);
+}
 
 void Game::Update(float dt) {
-
 	AppBase::Update(dt);
-
-	static int frameCount = 0;
-	static int state = 0;
-
-	// TODO:
-
-	//m_character->UpdateAnimation(m_context, state, frameCount);
-
-	frameCount += 1;
+	character.Move(dt, AppBase::m_keyPressed);
+	
 }
 
 void Game::Render() {
@@ -115,7 +96,7 @@ void Game::Render() {
 }
 
 void Game::UpdateGUI() {
-	AppBase::UpdateGUI();
+
 	ImGui::SetNextItemOpen(false, ImGuiCond_Once);
 	if (ImGui::TreeNode("General")) {
 		ImGui::Checkbox("Use FPV", &m_camera.m_useFirstPersonView);
@@ -179,7 +160,7 @@ void Game::UpdateGUI() {
 	}
 
 	ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-	if (m_mirror && ImGui::TreeNode("Mirror")) {
+	if (ImGui::TreeNode("Mirror")) {
 
 		ImGui::SliderFloat("Alpha", &m_mirrorAlpha, 0.0f, 1.0f);
 		const float blendColor[4] = { m_mirrorAlpha, m_mirrorAlpha,

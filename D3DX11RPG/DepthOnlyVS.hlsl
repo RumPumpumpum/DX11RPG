@@ -33,10 +33,10 @@ float4 main(VertexShaderInput input) : SV_POSITION
     // (float3x3) 캐스팅으로 Translation 제외
     for(int i = 0; i < 8; ++i)
     {
-        // TODO: 
+        posModel += weights[i] * mul(float4(input.posModel, 1.0f), boneTransforms[indices[i]]).xyz;
     }
 
-    // input.posModel = posModel;
+    input.posModel = posModel;
 
 #endif
     

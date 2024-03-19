@@ -1,35 +1,37 @@
 #pragma once
 
+#include <algorithm>
+#include <directxtk/SimpleMath.h>
+#include <iostream>
+#include <memory>
+
+#include "AnimationClip.h"
 #include "AppBase.h"
+#include "GeometryGenerator.h"
+#include "ImageFilter.h"
+#include "Model.h"
 #include "SkinnedMeshModel.h"
+#include "Character.h"
 
-// 기본 사용법은 SnippetHelloWorld.cpp
-// 렌더링 관련은 SnippetHelloWorldRender.cpp
 
-#define PX_RELEASE(x)                                                          \
-    if (x) {                                                                   \
-        x->release();                                                          \
-        x = NULL;                                                              \
-    }
 
-#define PVD_HOST "127.0.0.1"
-#define MAX_NUM_ACTOR_SHAPES 128
-
+using DirectX::BoundingSphere;
+using DirectX::SimpleMath::Vector3;
 
 class Game : public AppBase {
 public:
 	Game();
 
-	~Game();
-
-	bool InitScene() override;
+	virtual bool InitScene() override;
 
 	void UpdateLights(float dt) override;
 	void UpdateGUI() override;
 	void Update(float dt) override;
 	void Render() override;
 
-public:
-	shared_ptr<SkinnedMeshModel> m_character;
+protected:
+	shared_ptr<Model> m_ground;
+	Character character;
+	shared_ptr<SkinnedMeshModel> m_characterMeshModel;
 };
 
