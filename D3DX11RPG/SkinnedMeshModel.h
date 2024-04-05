@@ -96,6 +96,15 @@ public:
 	// virtual void RenderWireBoundingSphere(ComPtr<ID3D11DeviceContext>
 	// &context);
 
+	Vector3 GetPosition() const {
+		// 캐릭터의 위치는 월드 변환 행렬의 마지막 열에 있습니다.
+		// 따라서 월드 변환 행렬의 마지막 열을 추출하여 반환합니다.
+		Matrix worldMatrix = m_worldRow; // 또는 모델의 월드 변환 행렬
+		Vector3 position = Vector3(worldMatrix._41, worldMatrix._42, worldMatrix._43);
+		return position;
+	}
+
+
 public:
 	// ConstantBuffer<SkinnedConsts> m_skinnedConsts;
 	StructuredBuffer<Matrix> m_boneTransforms;

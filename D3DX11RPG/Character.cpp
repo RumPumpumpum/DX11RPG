@@ -33,7 +33,7 @@ void Character::CharacterInit(ComPtr<ID3D11Device> device, ComPtr<ID3D11DeviceCo
 		}
 	}
 
-	Vector3 center(0.0f, 0.5f, 2.0f);
+	Vector3 center(0.0f, 0.5f, 2.0f);	// 캐릭터가 생성될 곳
 	m_characterMeshModel =
 		make_shared<SkinnedMeshModel>(m_device, m_context, meshes, aniData);
 	m_characterMeshModel->m_materialConsts.GetCpu().albedoFactor = Vector3(1.0f);
@@ -66,14 +66,6 @@ void Character::Move(float dt, bool keyPressed[]) {
 			state = 1;
 			frameCount = 0;
 		}
-		else if (keyPressed[VK_DOWN])
-		{
-			state = 1;
-			frameCount = 0;
-			m_characterMeshModel->m_aniData.accumulatedRootTransform =
-				Matrix::CreateRotationY(180.0f) *
-				m_characterMeshModel->m_aniData.accumulatedRootTransform;
-		}
 		else if (frameCount ==
 			m_characterMeshModel->m_aniData.clips[state].keys[0].size())
 		{
@@ -91,6 +83,12 @@ void Character::Move(float dt, bool keyPressed[]) {
 	}
 	else if (state == 2) // 걷기
 	{
+		// 캐릭터의 현재 앞쪽 방향
+		Vector3 characterDirection = m_characterMeshModel->m_aniData.accumulatedRootTransform.Forward();
+
+		m_characterMeshModel->m_aniData.accumulatedRootTransform *=
+			Matrix::CreateTranslation(characterDirection * 300.0f * dt);
+
 		if (keyPressed[VK_RIGHT])
 			m_characterMeshModel->m_aniData.accumulatedRootTransform =
 			Matrix::CreateRotationY(3.141592f * 60.0f / 180.0f * dt) *

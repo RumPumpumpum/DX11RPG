@@ -24,6 +24,7 @@ void Camera::UpdateViewDir() {
 	m_rightDir = m_upDir.Cross(m_viewDir);
 }
 
+// 키보드로 카메라 위치 이동
 void Camera::UpdateKeyboard(const float dt, bool const keyPressed[256]) {
 	if (m_useFirstPersonView) {
 		if (keyPressed['W'])

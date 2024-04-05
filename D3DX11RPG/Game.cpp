@@ -18,6 +18,8 @@ using namespace DirectX::SimpleMath;
 Game::Game() : AppBase() {}
 
 bool Game::InitScene() {
+	character.CharacterInit(m_device, m_context);
+
 
 	AppBase::m_globalConstsCPU.strengthIBL = 1.0f;
 
@@ -74,7 +76,6 @@ bool Game::InitScene() {
 		// m_basicList.push_back(m_ground); // 거울은 리스트에 등록 X
 	}
 
-	character.CharacterInit(m_device, m_context);
 	m_characterMeshModel = character.GetCharacterMeshModel();
 	m_basicList.push_back(m_characterMeshModel); // 리스트에 등록
 	return true;
